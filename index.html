@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>통계적 사고 관련 추천 도서</title>
+<style>
+  :root{
+    --paper:#E8EBE9;
+    --card:#FCFCFA;
+    --ink:#1C2621;
+    --muted:#5E6B64;
+    --line:rgba(28,38,33,.14);
+    --line-strong:rgba(28,38,33,.3);
+    --focus:#2F6F6A;
+    --danger:#9B3B2E;
+    --sans:"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,"Noto Sans KR",sans-serif;
+    --serif:"AppleMyungjo","Nanum Myeongjo","KoPub Batang",Batang,바탕,Georgia,serif;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *,*::before,*::after{box-sizing:inherit}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:15px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+  /* ---------- header ---------- */
+  header.masthead{padding:40px 0 22px}
+  .masthead-row{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  h1{font-family:var(--serif);font-size:34px;font-weight:600;letter-spacing:-.01em;margin:0;line-height:1.25}
+  .tagline{margin:8px 0 0;color:var(--muted);max-width:56ch}
+  .masthead-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+  .btn{
+    border:1px solid var(--line-strong);background:transparent;color:var(--ink);
+    padding:7px 13px;border-radius:2px;font-size:14px;
+  }
+  .btn:hover{background:rgba(28,38,33,.05)}
+  .btn-primary{background:var(--ink);color:var(--card);border-color:var(--ink)}
+  .btn-primary:hover{background:#2b3a32}
+  .btn-danger{color:var(--danger);border-color:rgba(155,59,46,.45)}
+  .btn-danger:hover{background:rgba(155,59,46,.08)}
+  .btn-quiet{border-color:transparent;color:var(--muted);padding:5px 8px}
+  .btn-quiet:hover{background:rgba(28,38,33,.06);color:var(--ink)}
+  .btn-sm{font-size:13px;padding:4px 9px}
+
+  .mode-toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+  .mode-toggle input{width:16px;height:16px;accent-color:var(--focus)}
+
+  /* ---------- filter bar ---------- */
+  .filters{
+    position:sticky;top:0;z-index:20;background:var(--paper);
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    padding:12px 0;
+  }
+  .filters-inner{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .search{position:relative;flex:1 1 240px;min-width:200px}
+  .search input{
+    width:100%;padding:8px 30px 8px 11px;border:1px solid var(--line-strong);
+    border-radius:2px;background:var(--card);
+  }
+  .search .clear{
+    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:4px 6px;border-radius:2px;
+  }
+  .sort{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+  .sort select{padding:7px 9px;border:1px solid var(--line-strong);border-radius:2px;background:var(--card)}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    border:1px solid var(--line-strong);background:var(--card);
+    padding:4px 11px;border-radius:2px;font-size:13.5px;color:var(--ink);
+  }
+  .chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--muted));flex:none}
+  .chip .n{color:var(--muted);font-variant-numeric:tabular-nums}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+  .chip[aria-pressed="true"] .n{color:rgba(252,252,250,.7)}
+  .chip:hover{border-color:var(--ink)}
+
+  .summary{display:flex;align-items:center;gap:10px;padding:14px 0 0;color:var(--muted);font-size:14px}
+
+  /* ---------- grid ---------- */
+  main{padding:20px 0 90px}
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));list-style:none;margin:0;padding:0}
+
+  .card{
+    display:flex;background:var(--card);border:1px solid var(--line);
+    border-radius:0 3px 3px 0;overflow:hidden;
+  }
+  .spine{
+    flex:none;width:62px;background:var(--c,#6b7a74);position:relative;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 7px 0 0 rgba(0,0,0,.16), inset 9px 0 0 rgba(255,255,255,.14);
+  }
+  .spine img{width:100%;height:100%;object-fit:cover;display:block}
+  .spine .initial{
+    font-family:var(--serif);font-size:26px;color:#fff;opacity:.92;
+    writing-mode:vertical-rl;letter-spacing:.06em;padding:14px 0;
+  }
+  .card-body{flex:1;min-width:0;padding:14px 15px 13px}
+  .card h3{font-family:var(--serif);font-size:19px;font-weight:600;margin:0;line-height:1.35;word-break:keep-all}
+  .card .subtitle{margin:4px 0 0;font-size:13.5px;color:var(--muted);word-break:keep-all}
+  .card .meta{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
+  .card .meta b{font-weight:500;color:var(--ink)}
+  .card a.link{color:var(--focus);text-decoration:none;border-bottom:1px solid rgba(47,111,106,.4)}
+
+  .badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+  .badge{
+    font-size:12.5px;padding:2px 8px;border-radius:2px;
+    color:var(--c,#6b7a74);
+    background:color-mix(in srgb, var(--c,#6b7a74) 8%, transparent);
+    border:1px solid color-mix(in srgb, var(--c,#6b7a74) 35%, transparent);
+  }
+  button.badge{cursor:pointer}
+  button.badge:hover{background:color-mix(in srgb, var(--c,#6b7a74) 16%, transparent)}
+  .tag{font-size:12.5px;padding:2px 8px;border-radius:2px;border:1px solid var(--line-strong);color:var(--muted)}
+
+  .comment{margin:11px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:14px;white-space:pre-wrap;word-break:break-word}
+  .comment.clamped{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .comment-empty{color:var(--muted);font-style:italic}
+  .comment-more{border:0;background:none;padding:2px 0;color:var(--focus);font-size:13px}
+  .comment-edit textarea{
+    width:100%;min-height:92px;padding:8px 9px;border:1px solid var(--line-strong);
+    border-radius:2px;background:var(--paper);resize:vertical;font-size:14px;
+  }
+  .comment-edit .row{display:flex;gap:6px;margin-top:6px}
+
+  .card-actions{display:none;gap:4px;margin-top:11px;padding-top:9px;border-top:1px solid var(--line)}
+  body.editing .card-actions{display:flex}
+  body:not(.editing) .edit-only{display:none !important}
+
+  /* ---------- empty ---------- */
+  .empty{
+    border:1px dashed var(--line-strong);border-radius:3px;background:var(--card);
+    padding:56px 24px;text-align:center;
+  }
+  .empty h2{font-family:var(--serif);font-weight:600;font-size:21px;margin:0 0 6px}
+  .empty p{margin:0 0 16px;color:var(--muted)}
+
+  /* ---------- dialogs ---------- */
+  .backdrop{
+    position:fixed;inset:0;background:rgba(18,26,22,.45);z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .backdrop[hidden]{display:none}
+  .dialog{
+    background:var(--card);border-radius:3px;width:100%;max-width:640px;
+    max-height:calc(100vh - 40px);display:flex;flex-direction:column;
+    box-shadow:0 18px 50px rgba(18,26,22,.28);
+  }
+  .dialog.narrow{max-width:420px}
+  .dialog header{padding:18px 22px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .dialog header h2{font-family:var(--serif);font-size:20px;font-weight:600;margin:0}
+  .dialog .content{padding:18px 22px;overflow:auto}
+  .dialog footer{padding:14px 22px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  .dialog footer .spacer{margin-right:auto}
+
+  .field{margin-bottom:14px}
+  .field label,.legend{display:block;font-size:13.5px;color:var(--muted);margin-bottom:5px}
+  .field input[type=text],.field input[type=url],.field textarea,.field select{
+    width:100%;padding:8px 10px;border:1px solid var(--line-strong);border-radius:2px;background:var(--paper);
+  }
+  .field textarea{min-height:96px;resize:vertical}
+  .field .hint{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .field .err{font-size:13px;color:var(--danger);margin-top:4px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .picker{display:flex;flex-wrap:wrap;gap:6px}
+  .picker label{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);
+    padding:5px 10px;border-radius:2px;font-size:13.5px;margin:0;color:var(--ink);cursor:pointer;
+  }
+  .picker label:has(input:checked){background:var(--ink);color:var(--card);border-color:var(--ink)}
+  .picker input{position:absolute;opacity:0;width:0;height:0}
+  .picker .dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+  .inline-add{display:flex;gap:6px;margin-top:8px}
+  .inline-add input{flex:1;padding:7px 9px;border:1px solid var(--line-strong);border-radius:2px;background:var(--paper)}
+
+  .field-list{list-style:none;margin:0;padding:0}
+  .field-list li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .field-list li:last-child{border-bottom:0}
+  .field-list .name{flex:1;min-width:0}
+  .field-list input.rename{width:100%;padding:5px 8px;border:1px solid var(--line-strong);border-radius:2px;background:var(--paper)}
+  .field-list .count{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+
+  .radio-row{display:flex;flex-direction:column;gap:8px}
+  .radio-row label{display:flex;gap:8px;align-items:flex-start}
+  .radio-row span small{display:block;color:var(--muted);font-size:13px}
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;
+    background:var(--ink);color:var(--card);border-radius:3px;
+    padding:11px 13px 11px 16px;display:flex;align-items:center;gap:14px;
+    box-shadow:0 10px 30px rgba(18,26,22,.3);max-width:calc(100vw - 32px);
+  }
+  .toast[hidden]{display:none}
+  .toast button{background:none;border:1px solid rgba(252,252,250,.45);color:var(--card);padding:4px 10px;border-radius:2px;font-size:13.5px}
+  .toast button:hover{background:rgba(252,252,250,.12)}
+
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+  @media (max-width:640px){
+    header.masthead{padding:26px 0 16px}
+    h1{font-size:27px}
+    .grid{grid-template-columns:1fr}
+    .backdrop{padding:0}
+    .dialog{max-width:none;height:100%;max-height:100%;border-radius:0}
+    .two{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="masthead-row">
+      <div>
+        <h1>통계적 사고 관련 추천 도서</h1>
+        <p class="tagline">확률과 통계, 예측과 판단을 다룬 책을 분야별로 모아 둡니다.</p>
+      </div>
+      <div class="masthead-tools">
+        <label class="mode-toggle"><input type="checkbox" id="modeToggle"> 편집 모드</label>
+        <button class="btn edit-only" id="manageFields">분야 관리</button>
+        <button class="btn edit-only" id="exportBtn">내보내기</button>
+        <button class="btn edit-only" id="importBtn">가져오기</button>
+        <button class="btn btn-primary edit-only" id="addBook">책 추가</button>
+      </div>
+    </div>
+  </header>
+</div>
+
+<div class="filters">
+  <div class="wrap">
+    <div class="filters-inner">
+      <div class="search">
+        <label class="sr-only" for="search">검색</label>
+        <input type="text" id="search" placeholder="제목, 저자, 출판사, 코멘트 검색" autocomplete="off">
+        <button class="clear" id="clearSearch" hidden aria-label="검색어 지우기">&times;</button>
+      </div>
+      <div class="sort">
+        <label for="sort">정렬</label>
+        <select id="sort">
+          <option value="published">출간일 최신순</option>
+          <option value="published-asc">출간일 오래된순</option>
+          <option value="title">제목순</option>
+          <option value="added">추가한 순서</option>
+        </select>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="summary"><span id="summary"></span><button class="btn btn-quiet btn-sm" id="resetFilters" hidden>필터 초기화</button></div>
+  </div>
+</div>
+
+<main class="wrap">
+  <ul class="grid" id="grid"></ul>
+  <div id="emptyState"></div>
+</main>
+
+<!-- 책 입력 -->
+<div class="backdrop" id="bookBackdrop" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="bookDialogTitle">
+    <header>
+      <h2 id="bookDialogTitle">책 추가</h2>
+      <button class="btn btn-quiet" data-close aria-label="닫기">&times;</button>
+    </header>
+    <div class="content">
+      <div class="field">
+        <label for="f-title">제목</label>
+        <input type="text" id="f-title" autocomplete="off">
+        <div class="err" id="err-title" hidden>제목을 입력해 주세요.</div>
+      </div>
+      <div class="field">
+        <label for="f-subtitle">부제</label>
+        <input type="text" id="f-subtitle" autocomplete="off">
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="f-authors">저자</label>
+          <input type="text" id="f-authors" autocomplete="off">
+          <div class="hint">여러 명은 쉼표로 구분</div>
+        </div>
+        <div class="field">
+          <label for="f-translators">역자</label>
+          <input type="text" id="f-translators" autocomplete="off">
+          <div class="hint">여러 명은 쉼표로 구분</div>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="f-publisher">출판사</label>
+          <input type="text" id="f-publisher" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f-published">출간일</label>
+          <input type="text" id="f-published" placeholder="2023-10-11 / 2023-10 / 2023" autocomplete="off">
+          <div class="err" id="err-published" hidden>2023, 2023-10, 2023-10-11 형식으로 입력해 주세요.</div>
+        </div>
+      </div>
+      <div class="field">
+        <span class="legend">분야</span>
+        <div class="picker" id="fieldPicker"></div>
+        <div class="inline-add">
+          <label class="sr-only" for="newField">새 분야 이름</label>
+          <input type="text" id="newField" placeholder="새 분야 추가" autocomplete="off">
+          <button class="btn" id="newFieldBtn" type="button">추가</button>
+        </div>
+        <div class="err" id="err-fields" hidden>분야를 하나 이상 골라 주세요.</div>
+      </div>
+      <div class="field">
+        <label for="f-comment">코멘트</label>
+        <textarea id="f-comment"></textarea>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="f-availability">유통 상태</label>
+          <select id="f-availability">
+            <option value="">표시 안 함</option>
+            <option value="ebook">eBook</option>
+            <option value="out">절판</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-note">비고</label>
+          <input type="text" id="f-note" placeholder="개정판, 양장본, 감수 등" autocomplete="off">
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="f-link">링크</label>
+          <input type="url" id="f-link" placeholder="https://" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f-cover">표지 이미지 주소</label>
+          <input type="url" id="f-cover" placeholder="https://" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn" data-close>취소</button>
+      <button class="btn btn-primary" id="saveBook">저장</button>
+    </footer>
+  </div>
+</div>
+
+<!-- 분야 관리 -->
+<div class="backdrop" id="fieldsBackdrop" hidden>
+  <div class="dialog narrow" role="dialog" aria-modal="true" aria-labelledby="fieldsDialogTitle">
+    <header>
+      <h2 id="fieldsDialogTitle">분야 관리</h2>
+      <button class="btn btn-quiet" data-close aria-label="닫기">&times;</button>
+    </header>
+    <div class="content">
+      <ul class="field-list" id="fieldList"></ul>
+      <div class="inline-add">
+        <label class="sr-only" for="addFieldInput">분야 이름</label>
+        <input type="text" id="addFieldInput" placeholder="분야 이름" autocomplete="off">
+        <button class="btn" id="addFieldBtn" type="button">추가</button>
+      </div>
+    </div>
+    <footer><button class="btn btn-primary" data-close>닫기</button></footer>
+  </div>
+</div>
+
+<!-- 확인 -->
+<div class="backdrop" id="confirmBackdrop" hidden>
+  <div class="dialog narrow" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <header><h2 id="confirmTitle">확인</h2></header>
+    <div class="content"><p id="confirmBody" style="margin:0"></p></div>
+    <footer>
+      <button class="btn" id="confirmCancel">취소</button>
+      <button class="btn btn-primary" id="confirmOk">확인</button>
+    </footer>
+  </div>
+</div>
+
+<!-- 가져오기 -->
+<div class="backdrop" id="importBackdrop" hidden>
+  <div class="dialog narrow" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <header>
+      <h2 id="importTitle">가져오기</h2>
+      <button class="btn btn-quiet" data-close aria-label="닫기">&times;</button>
+    </header>
+    <div class="content">
+      <p id="importSummary" style="margin:0 0 14px;color:var(--muted)"></p>
+      <div class="radio-row">
+        <label><input type="radio" name="importMode" value="merge" checked><span>합치기<small>현재 목록을 두고 없는 책만 더합니다.</small></span></label>
+        <label><input type="radio" name="importMode" value="replace"><span>덮어쓰기<small>현재 목록과 분야를 파일의 내용으로 바꿉니다.</small></span></label>
+      </div>
+    </div>
+    <footer>
+      <button class="btn" data-close>취소</button>
+      <button class="btn btn-primary" id="importConfirm">가져오기</button>
+    </footer>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status">
+  <span id="toastText"></span>
+  <button id="toastAction" hidden></button>
+</div>
+
+<input type="file" id="fileInput" accept="application/json,.json" hidden>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------------------------------------------------------------
+   저장소 — localStorage, 실패하면 메모리로 대체
+---------------------------------------------------------------- */
+var KEY = 'bookshelf.v1';
+var memory = null;
+var storageOK = (function(){
+  try { var k='__t'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }
+  catch(e){ return false; }
+})();
+
+function loadRaw(){
+  if(!storageOK) return memory;
+  try { var s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; }
+  catch(e){ return null; }
+}
+function saveRaw(data){
+  if(!storageOK){ memory = data; return; }
+  try { localStorage.setItem(KEY, JSON.stringify(data)); }
+  catch(e){ notify('저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.'); }
+}
+
+/* ---------------------------------------------------------------
+   초기 데이터 — 최초 1회만 심는다
+---------------------------------------------------------------- */
+var PALETTE = ['#35558A','#2F6F6A','#7B3E6E','#A85236','#6B7A33','#B07C2A','#4A6B8A','#8A5A3C'];
+
+var SEED_FIELDS = [
+  {id:'fd1', name:'확률과 우연',    color:'#35558A'},
+  {id:'fd2', name:'베이즈와 예측',  color:'#2F6F6A'},
+  {id:'fd3', name:'판단과 의사결정', color:'#7B3E6E'},
+  {id:'fd4', name:'통계학의 역사',  color:'#A85236'},
+  {id:'fd5', name:'데이터 리터러시', color:'#6B7A33'},
+  {id:'fd6', name:'위험과 금융',    color:'#B07C2A'}
+];
+
+var SEED_BOOKS = [
+  {title:'데이터지능', subtitle:'데이터를 읽고 의심하고 추측하는 힘', authors:['이긍희'], translators:[], publisher:'드레북스', publishedAt:'2025-04-28', fields:['fd5'], note:'반양장'},
+  {title:'우연을 길들이다', subtitle:'', authors:['이언 해킹'], translators:['정혜경'], publisher:'바다출판사', publishedAt:'2025-03-05', fields:['fd1','fd4'], note:''},
+  {title:'모든 것은 예측 가능하다', subtitle:'진단검사에서 뇌의 작동 원리까지, 세상을 설명하는 베이즈 정리의 놀라운 힘', authors:['톰 치버스'], translators:['홍한결'], publisher:'김영사', publishedAt:'2025-01-03', fields:['fd2'], note:''},
+  {title:'신은 주사위 놀이를 하지 않는다', subtitle:'로또부터 진화까지, 우연한 일들의 법칙', authors:['데이비드 핸드'], translators:['전대호'], publisher:'더퀘스트', publishedAt:'2023-10-11', fields:['fd1'], note:'개정판 · 양장본'},
+  {title:'노이즈: 생각의 잡음', subtitle:'판단을 조종하는 생각의 함정', authors:['대니얼 카너먼','올리비에 시보니','캐스 선스타인'], translators:['장진영'], publisher:'김영사', publishedAt:'2022-04-29', fields:['fd3'], note:'안서원 감수 · 양장본'},
+  {title:'신호와 소음', subtitle:'불확실성 시대, 미래를 포착하는 예측의 비밀', authors:['네이트 실버'], translators:['이경식'], publisher:'더퀘스트', publishedAt:'2021-02-03', fields:['fd2','fd5'], availability:'ebook', note:'개정판'},
+  {title:'수학의 쓸모', subtitle:'불확실한 미래에서 보통 사람들도 답을 얻는 방법', authors:['닉 폴슨','제임스 스콧'], translators:['노태복'], publisher:'더퀘스트', publishedAt:'2020-04-02', fields:['fd2'], note:'양장본'},
+  {title:'차를 맛보는 여인', subtitle:'The Lady Tasting Tea', authors:['David Salsburg'], translators:['강푸름','김지형'], publisher:'북앤에듀', publishedAt:'2019-02-15', fields:['fd4'], note:''},
+  {title:'생각에 관한 생각', subtitle:'', authors:['대니얼 카너먼'], translators:['이창신'], publisher:'김영사', publishedAt:'2018-03-30', fields:['fd3'], note:'양장본'},
+  {title:'통계학을 떠받치는 일곱 기둥 이야기', subtitle:'통계는 어떻게 과학이 되었는가?', authors:['스티븐 스티글러'], translators:['김정아'], publisher:'프리렉', publishedAt:'2016-12-28', fields:['fd4'], note:''},
+  {title:'생각의 탄생', subtitle:'', authors:['로버트 루트번스타인'], translators:[], publisher:'에코의서재', publishedAt:'2008-05-15', fields:['fd3'], note:''},
+  {title:'신을 거역한 사람들', subtitle:'', authors:['피터 L. 번스타인'], translators:['안진환 외'], publisher:'한국경제신문사', publishedAt:'2008-03-10', fields:['fd6','fd1'], note:''},
+  {title:'통계학의 역사', subtitle:'', authors:['스티븐 스티글러'], translators:[], publisher:'한길사', publishedAt:'2005-01-15', fields:['fd4'], note:'한국학술진흥재단 학술명저번역총서 서양편 21'}
+];
+
+function seedState(){
+  var now = Date.now();
+  var books = SEED_BOOKS.map(function(b, i){
+    return normalizeBook({
+      id: 'bk' + (i+1),
+      title: b.title, subtitle: b.subtitle,
+      authors: b.authors, translators: b.translators,
+      publisher: b.publisher, publishedAt: b.publishedAt,
+      fields: b.fields, comment: '',
+      availability: b.availability || '', note: b.note || '',
+      link: '', coverUrl: '',
+      createdAt: now - i * 1000, updatedAt: now - i * 1000
+    });
+  });
+  return { version: 1, fields: SEED_FIELDS.slice(), books: books, editMode: false };
+}
+
+/* ---------------------------------------------------------------
+   상태
+---------------------------------------------------------------- */
+var state = loadRaw();
+if(!state || !Array.isArray(state.books)) { state = seedState(); saveRaw(state); }
+state.fields = state.fields || [];
+state.books = state.books.map(normalizeBook);
+
+var ui = { q:'', sort:'published', fields:[], expanded:{}, editingComment:null };
+var pending = { book:null, editingId:null, chosen:[], importData:null };
+
+function normalizeBook(b){
+  return {
+    id: b.id || uid('bk'),
+    title: (b.title||'').trim(),
+    subtitle: (b.subtitle||'').trim(),
+    authors: Array.isArray(b.authors) ? b.authors : splitList(b.authors),
+    translators: Array.isArray(b.translators) ? b.translators : splitList(b.translators),
+    publisher: (b.publisher||'').trim(),
+    publishedAt: (b.publishedAt||'').trim(),
+    fields: Array.isArray(b.fields) ? b.fields.slice() : [],
+    comment: b.comment || '',
+    availability: b.availability || '',
+    note: b.note || '',
+    link: b.link || '',
+    coverUrl: b.coverUrl || '',
+    createdAt: b.createdAt || Date.now(),
+    updatedAt: b.updatedAt || b.createdAt || Date.now()
+  };
+}
+function uid(p){ return p + Math.random().toString(36).slice(2,9); }
+function splitList(s){
+  if(!s) return [];
+  return String(s).split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+}
+function save(){ saveRaw(state); }
+
+/* ---------------------------------------------------------------
+   도우미
+---------------------------------------------------------------- */
+var $ = function(sel){ return document.querySelector(sel); };
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fieldById(id){
+  for(var i=0;i<state.fields.length;i++) if(state.fields[i].id === id) return state.fields[i];
+  return null;
+}
+function bookById(id){
+  for(var i=0;i<state.books.length;i++) if(state.books[i].id === id) return state.books[i];
+  return null;
+}
+function bookColor(b){
+  var f = b.fields.length ? fieldById(b.fields[0]) : null;
+  return f ? f.color : '#6b7a74';
+}
+function yearOf(b){ return b.publishedAt ? b.publishedAt.slice(0,4) : ''; }
+function sortKey(b){ return (b.publishedAt || '0000') + '-99-99'; }
+function nextColor(){ return PALETTE[state.fields.length % PALETTE.length]; }
+
+var AVAIL = { ebook:'eBook', out:'절판' };
+
+/* ---------------------------------------------------------------
+   렌더
+---------------------------------------------------------------- */
+function visibleBooks(){
+  var q = ui.q.trim().toLowerCase();
+  var list = state.books.filter(function(b){
+    if(ui.fields.length){
+      var hit = b.fields.some(function(f){ return ui.fields.indexOf(f) !== -1; });
+      if(!hit) return false;
+    }
+    if(!q) return true;
+    var hay = [b.title, b.subtitle, b.publisher, b.comment, b.note,
+               b.authors.join(' '), b.translators.join(' ')].join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  });
+  list.sort(function(a,b){
+    if(ui.sort === 'title') return a.title.localeCompare(b.title, 'ko');
+    if(ui.sort === 'added') return b.createdAt - a.createdAt;
+    if(ui.sort === 'published-asc') return sortKey(a) < sortKey(b) ? -1 : 1;
+    return sortKey(a) > sortKey(b) ? -1 : 1;
+  });
+  return list;
+}
+
+function render(){
+  document.body.classList.toggle('editing', !!state.editMode);
+  $('#modeToggle').checked = !!state.editMode;
+  renderChips();
+  var list = visibleBooks();
+  renderSummary(list.length);
+  renderGrid(list);
+}
+
+function renderChips(){
+  var counts = {};
+  state.books.forEach(function(b){
+    b.fields.forEach(function(f){ counts[f] = (counts[f]||0) + 1; });
+  });
+  $('#chips').innerHTML = state.fields.map(function(f){
+    var on = ui.fields.indexOf(f.id) !== -1;
+    return '<button class="chip" data-field="' + esc(f.id) + '" aria-pressed="' + on + '" style="--c:' + esc(f.color) + '">'
+      + '<span class="dot"></span>' + esc(f.name) + ' <span class="n">' + (counts[f.id]||0) + '</span></button>';
+  }).join('');
+}
+
+function renderSummary(n){
+  var total = state.books.length;
+  var filtered = ui.fields.length > 0 || ui.q.trim() !== '';
+  var txt = filtered
+    ? (ui.fields.length ? ui.fields.length + '개 분야 · ' : '') + n + '권 (전체 ' + total + '권)'
+    : '전체 ' + total + '권';
+  $('#summary').textContent = txt;
+  $('#resetFilters').hidden = !filtered;
+  $('#clearSearch').hidden = ui.q === '';
+}
+
+function renderGrid(list){
+  var grid = $('#grid'), empty = $('#emptyState');
+  if(!list.length){
+    grid.innerHTML = '';
+    if(!state.books.length){
+      empty.innerHTML = '<div class="empty"><h2>서가가 비어 있습니다</h2><p>첫 책을 추가해 목록을 시작하세요.</p>'
+        + '<button class="btn btn-primary" id="emptyAdd">책 추가</button></div>';
+      var ea = $('#emptyAdd');
+      if(ea) ea.addEventListener('click', function(){ state.editMode = true; save(); render(); openBookDialog(null); });
+    } else {
+      empty.innerHTML = '<div class="empty"><h2>조건에 맞는 책이 없습니다</h2><p>검색어나 분야를 바꿔 보세요.</p>'
+        + '<button class="btn" id="emptyReset">필터 초기화</button></div>';
+      var er = $('#emptyReset');
+      if(er) er.addEventListener('click', resetFilters);
+    }
+    return;
+  }
+  empty.innerHTML = '';
+  grid.innerHTML = list.map(cardHTML).join('');
+}
+
+function cardHTML(b){
+  var color = bookColor(b);
+  var cover = b.coverUrl
+    ? '<img src="' + esc(b.coverUrl) + '" alt="">'
+    : '<span class="initial" aria-hidden="true">' + esc(b.title.slice(0,1)) + '</span>';
+
+  var people = [];
+  if(b.authors.length) people.push('<b>' + esc(b.authors.join(', ')) + '</b>');
+  if(b.translators.length) people.push(esc(b.translators.join(', ')) + ' 옮김');
+
+  var pub = [];
+  if(b.publisher) pub.push(esc(b.publisher));
+  if(yearOf(b)) pub.push('<span title="' + esc(b.publishedAt) + '">' + esc(yearOf(b)) + '</span>');
+  if(b.link) pub.push('<a class="link" href="' + esc(b.link) + '" target="_blank" rel="noopener">자세히</a>');
+
+  var badges = b.fields.map(function(id){
+    var f = fieldById(id);
+    if(!f) return '';
+    return '<button class="badge" data-field-filter="' + esc(f.id) + '" style="--c:' + esc(f.color) + '">' + esc(f.name) + '</button>';
+  }).join('');
+  if(b.availability) badges += '<span class="tag">' + esc(AVAIL[b.availability] || b.availability) + '</span>';
+  if(b.note) badges += '<span class="tag">' + esc(b.note) + '</span>';
+
+  return '<li class="card" data-id="' + esc(b.id) + '">'
+    + '<div class="spine" style="--c:' + esc(color) + '">' + cover + '</div>'
+    + '<div class="card-body">'
+    +   '<h3>' + esc(b.title) + '</h3>'
+    +   (b.subtitle ? '<p class="subtitle">' + esc(b.subtitle) + '</p>' : '')
+    +   (people.length ? '<p class="meta">' + people.join(' · ') + '</p>' : '')
+    +   (pub.length ? '<p class="meta">' + pub.join(' · ') + '</p>' : '')
+    +   '<div class="badges">' + badges + '</div>'
+    +   commentHTML(b)
+    +   '<div class="card-actions">'
+    +     '<button class="btn btn-quiet btn-sm" data-act="edit">편집</button>'
+    +     '<button class="btn btn-quiet btn-sm" data-act="comment">코멘트</button>'
+    +     '<button class="btn btn-quiet btn-sm btn-danger" data-act="delete">삭제</button>'
+    +   '</div>'
+    + '</div></li>';
+}
+
+function commentHTML(b){
+  if(ui.editingComment === b.id){
+    return '<div class="comment comment-edit">'
+      + '<label class="sr-only" for="ce-' + esc(b.id) + '">코멘트</label>'
+      + '<textarea id="ce-' + esc(b.id) + '" data-act="comment-input">' + esc(b.comment) + '</textarea>'
+      + '<div class="row"><button class="btn btn-primary btn-sm" data-act="comment-save">저장</button>'
+      + '<button class="btn btn-sm" data-act="comment-cancel">취소</button></div></div>';
+  }
+  if(!b.comment){
+    if(!state.editMode) return '';
+    return '<p class="comment comment-empty edit-only"><button class="comment-more" data-act="comment">코멘트 쓰기</button></p>';
+  }
+  var long = b.comment.length > 160;
+  var expanded = !!ui.expanded[b.id];
+  return '<div class="comment' + (long && !expanded ? ' clamped' : '') + '">' + esc(b.comment) + '</div>'
+    + (long ? '<button class="comment-more" data-act="toggle-comment">' + (expanded ? '접기' : '더 보기') + '</button>' : '');
+}
+
+/* ---------------------------------------------------------------
+   목록 상호작용
+---------------------------------------------------------------- */
+$('#grid').addEventListener('click', function(e){
+  var badge = e.target.closest('[data-field-filter]');
+  if(badge){ toggleField(badge.getAttribute('data-field-filter')); return; }
+
+  var btn = e.target.closest('[data-act]');
+  if(!btn) return;
+  var card = btn.closest('.card');
+  if(!card) return;
+  var id = card.getAttribute('data-id');
+  var act = btn.getAttribute('data-act');
+
+  if(act === 'edit'){ openBookDialog(id); }
+  else if(act === 'delete'){ askDelete(id); }
+  else if(act === 'comment'){ ui.editingComment = id; render(); focusComment(id); }
+  else if(act === 'comment-cancel'){ ui.editingComment = null; render(); }
+  else if(act === 'comment-save'){
+    var ta = card.querySelector('[data-act="comment-input"]');
+    var b = bookById(id);
+    if(b && ta){ b.comment = ta.value.trim(); b.updatedAt = Date.now(); save(); }
+    ui.editingComment = null; render();
+  }
+  else if(act === 'toggle-comment'){ ui.expanded[id] = !ui.expanded[id]; render(); }
+});
+
+function focusComment(id){
+  var ta = document.querySelector('.card[data-id="' + id + '"] textarea');
+  if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
+
+$('#chips').addEventListener('click', function(e){
+  var chip = e.target.closest('[data-field]');
+  if(chip) toggleField(chip.getAttribute('data-field'));
+});
+function toggleField(id){
+  var i = ui.fields.indexOf(id);
+  if(i === -1) ui.fields.push(id); else ui.fields.splice(i,1);
+  render();
+}
+function resetFilters(){ ui.fields = []; ui.q = ''; $('#search').value = ''; render(); }
+$('#resetFilters').addEventListener('click', resetFilters);
+
+$('#search').addEventListener('input', function(e){ ui.q = e.target.value; render(); });
+$('#clearSearch').addEventListener('click', function(){ ui.q=''; $('#search').value=''; $('#search').focus(); render(); });
+$('#sort').addEventListener('change', function(e){ ui.sort = e.target.value; render(); });
+$('#modeToggle').addEventListener('change', function(e){
+  state.editMode = e.target.checked; ui.editingComment = null; save(); render();
+});
+
+/* ---------------------------------------------------------------
+   모달 공통 — 포커스 트랩, Esc
+---------------------------------------------------------------- */
+var openStack = [];
+var FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+function openModal(sel, onClose){
+  var el = $(sel);
+  el.hidden = false;
+  openStack.push({ el:el, prev:document.activeElement, onClose:onClose });
+  var f = el.querySelectorAll(FOCUSABLE);
+  if(f.length) f[0].focus();
+}
+function closeModal(){
+  var top = openStack.pop();
+  if(!top) return;
+  top.el.hidden = true;
+  if(top.prev && top.prev.focus) top.prev.focus();
+  if(top.onClose) top.onClose();
+}
+document.addEventListener('keydown', function(e){
+  if(!openStack.length) return;
+  var top = openStack[openStack.length-1];
+  if(e.key === 'Escape'){ e.preventDefault(); closeModal(); return; }
+  if(e.key !== 'Tab') return;
+  var f = Array.prototype.filter.call(top.el.querySelectorAll(FOCUSABLE), function(n){ return n.offsetParent !== null; });
+  if(!f.length) return;
+  var first = f[0], last = f[f.length-1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+document.addEventListener('click', function(e){
+  if(e.target.closest('[data-close]')) closeModal();
+  else if(e.target.classList.contains('backdrop') && openStack.length
+          && openStack[openStack.length-1].el === e.target) closeModal();
+});
+
+/* ---------------------------------------------------------------
+   확인 대화상자
+---------------------------------------------------------------- */
+function confirmDialog(opts){
+  return new Promise(function(resolve){
+    $('#confirmTitle').textContent = opts.title || '확인';
+    $('#confirmBody').textContent = opts.body || '';
+    var ok = $('#confirmOk'), cancel = $('#confirmCancel');
+    ok.textContent = opts.okLabel || '확인';
+    ok.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+    function done(v){
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      resolve(v);
+    }
+    function onOk(){ closeModal(); done(true); }
+    function onCancel(){ closeModal(); done(false); }
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+    openModal('#confirmBackdrop', function(){ done(false); });
+  });
+}
+
+/* ---------------------------------------------------------------
+   책 추가 / 편집
+---------------------------------------------------------------- */
+$('#addBook').addEventListener('click', function(){ openBookDialog(null); });
+
+function openBookDialog(id){
+  var b = id ? bookById(id) : null;
+  pending.editingId = id || null;
+  pending.chosen = b ? b.fields.slice() : [];
+  $('#bookDialogTitle').textContent = b ? '책 편집' : '책 추가';
+  $('#f-title').value = b ? b.title : '';
+  $('#f-subtitle').value = b ? b.subtitle : '';
+  $('#f-authors').value = b ? b.authors.join(', ') : '';
+  $('#f-translators').value = b ? b.translators.join(', ') : '';
+  $('#f-publisher').value = b ? b.publisher : '';
+  $('#f-published').value = b ? b.publishedAt : '';
+  $('#f-comment').value = b ? b.comment : '';
+  $('#f-availability').value = b ? b.availability : '';
+  $('#f-note').value = b ? b.note : '';
+  $('#f-link').value = b ? b.link : '';
+  $('#f-cover').value = b ? b.coverUrl : '';
+  $('#newField').value = '';
+  hideErrors();
+  renderPicker();
+  openModal('#bookBackdrop');
+}
+function hideErrors(){
+  $('#err-title').hidden = true; $('#err-published').hidden = true; $('#err-fields').hidden = true;
+}
+function renderPicker(){
+  $('#fieldPicker').innerHTML = state.fields.map(function(f){
+    var on = pending.chosen.indexOf(f.id) !== -1;
+    return '<label style="--c:' + esc(f.color) + '"><input type="checkbox" value="' + esc(f.id) + '"'
+      + (on ? ' checked' : '') + '><span class="dot"></span>' + esc(f.name) + '</label>';
+  }).join('');
+}
+$('#fieldPicker').addEventListener('change', function(e){
+  if(e.target.type !== 'checkbox') return;
+  var id = e.target.value, i = pending.chosen.indexOf(id);
+  if(e.target.checked && i === -1) pending.chosen.push(id);
+  if(!e.target.checked && i !== -1) pending.chosen.splice(i,1);
+});
+$('#newFieldBtn').addEventListener('click', addFieldFromForm);
+$('#newField').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); addFieldFromForm(); }
+});
+function addFieldFromForm(){
+  var name = $('#newField').value.trim();
+  if(!name) return;
+  var f = createField(name);
+  if(pending.chosen.indexOf(f.id) === -1) pending.chosen.push(f.id);
+  $('#newField').value = '';
+  renderPicker();
+  renderChips();
+}
+function createField(name){
+  for(var i=0;i<state.fields.length;i++) if(state.fields[i].name === name) return state.fields[i];
+  var f = { id: uid('fd'), name: name, color: nextColor() };
+  state.fields.push(f); save();
+  return f;
+}
+
+var DATE_RE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
+
+$('#saveBook').addEventListener('click', function(){
+  hideErrors();
+  var title = $('#f-title').value.trim();
+  var published = $('#f-published').value.trim();
+  var ok = true;
+  if(!title){ $('#err-title').hidden = false; $('#f-title').focus(); ok = false; }
+  if(published && !DATE_RE.test(published)){ $('#err-published').hidden = false; if(ok) $('#f-published').focus(); ok = false; }
+  if(!pending.chosen.length){ $('#err-fields').hidden = false; ok = false; }
+  if(!ok) return;
+
+  var dup = state.books.some(function(b){
+    return b.id !== pending.editingId && b.title.replace(/\s/g,'') === title.replace(/\s/g,'');
+  });
+  if(dup){
+    confirmDialog({
+      title:'같은 제목의 책이 있습니다',
+      body:'『' + title + '』이(가) 이미 목록에 있습니다. 그래도 저장할까요?',
+      okLabel:'저장'
+    }).then(function(yes){ if(yes) commitBook(); });
+    return;
+  }
+  commitBook();
+});
+
+function commitBook(){
+  var now = Date.now();
+  var data = {
+    title: $('#f-title').value.trim(),
+    subtitle: $('#f-subtitle').value.trim(),
+    authors: splitList($('#f-authors').value),
+    translators: splitList($('#f-translators').value),
+    publisher: $('#f-publisher').value.trim(),
+    publishedAt: $('#f-published').value.trim(),
+    fields: pending.chosen.slice(),
+    comment: $('#f-comment').value.trim(),
+    availability: $('#f-availability').value,
+    note: $('#f-note').value.trim(),
+    link: $('#f-link').value.trim(),
+    coverUrl: $('#f-cover').value.trim(),
+    updatedAt: now
+  };
+  if(pending.editingId){
+    var b = bookById(pending.editingId);
+    if(b){ for(var k in data) b[k] = data[k]; }
+    notify('『' + data.title + '』을(를) 수정했습니다.');
+  } else {
+    data.id = uid('bk');
+    data.createdAt = now;
+    state.books.unshift(normalizeBook(data));
+    notify('『' + data.title + '』을(를) 추가했습니다.');
+  }
+  save();
+  closeModal();
+  render();
+}
+
+/* ---------------------------------------------------------------
+   삭제 + 실행 취소
+---------------------------------------------------------------- */
+function askDelete(id){
+  var b = bookById(id);
+  if(!b) return;
+  confirmDialog({
+    title:'책 삭제',
+    body:'『' + b.title + '』을(를) 목록에서 지웁니다. 삭제 후 5초 안에는 되돌릴 수 있습니다.',
+    okLabel:'삭제', danger:true
+  }).then(function(yes){
+    if(!yes) return;
+    var idx = state.books.indexOf(b);
+    state.books.splice(idx, 1);
+    save(); render();
+    notify('『' + b.title + '』을(를) 삭제했습니다.', '실행 취소', function(){
+      state.books.splice(Math.min(idx, state.books.length), 0, b);
+      save(); render();
+    });
+  });
+}
+
+var toastTimer = null, toastHandler = null;
+function notify(text, actionLabel, handler){
+  var toast = $('#toast'), action = $('#toastAction');
+  $('#toastText').textContent = text;
+  if(toastHandler) action.removeEventListener('click', toastHandler);
+  if(actionLabel){
+    action.hidden = false;
+    action.textContent = actionLabel;
+    toastHandler = function(){ hideToast(); handler(); };
+    action.addEventListener('click', toastHandler);
+  } else {
+    action.hidden = true; toastHandler = null;
+  }
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, actionLabel ? 5000 : 2600);
+}
+function hideToast(){
+  clearTimeout(toastTimer);
+  $('#toast').hidden = true;
+  if(toastHandler){ $('#toastAction').removeEventListener('click', toastHandler); toastHandler = null; }
+}
+
+/* ---------------------------------------------------------------
+   분야 관리
+---------------------------------------------------------------- */
+$('#manageFields').addEventListener('click', function(){ renderFieldList(); openModal('#fieldsBackdrop'); });
+
+function countBooks(fieldId){
+  return state.books.filter(function(b){ return b.fields.indexOf(fieldId) !== -1; }).length;
+}
+function renderFieldList(){
+  $('#fieldList').innerHTML = state.fields.map(function(f){
+    return '<li data-id="' + esc(f.id) + '">'
+      + '<span class="dot" style="width:10px;height:10px;border-radius:50%;background:' + esc(f.color) + ';flex:none"></span>'
+      + '<span class="name"><label class="sr-only" for="rn-' + esc(f.id) + '">분야 이름</label>'
+      + '<input class="rename" id="rn-' + esc(f.id) + '" type="text" value="' + esc(f.name) + '"></span>'
+      + '<span class="count">' + countBooks(f.id) + '권</span>'
+      + '<button class="btn btn-quiet btn-sm btn-danger" data-del="' + esc(f.id) + '">삭제</button></li>';
+  }).join('') || '<li style="color:var(--muted)">분야가 없습니다.</li>';
+}
+$('#fieldList').addEventListener('change', function(e){
+  if(!e.target.classList.contains('rename')) return;
+  var li = e.target.closest('li'), f = fieldById(li.getAttribute('data-id'));
+  var name = e.target.value.trim();
+  if(!f) return;
+  if(!name){ e.target.value = f.name; return; }
+  f.name = name; save(); render();
+});
+$('#fieldList').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-del]');
+  if(!btn) return;
+  var f = fieldById(btn.getAttribute('data-del'));
+  if(!f) return;
+  var n = countBooks(f.id);
+  confirmDialog({
+    title:'분야 삭제',
+    body: n ? '「' + f.name + '」을 쓰는 책이 ' + n + '권 있습니다. 삭제하면 그 책들에서 이 분야가 빠집니다.'
+            : '「' + f.name + '」을 삭제합니다.',
+    okLabel:'삭제', danger:true
+  }).then(function(yes){
+    if(!yes) return;
+    state.fields = state.fields.filter(function(x){ return x.id !== f.id; });
+    state.books.forEach(function(b){ b.fields = b.fields.filter(function(x){ return x !== f.id; }); });
+    ui.fields = ui.fields.filter(function(x){ return x !== f.id; });
+    save(); renderFieldList(); render();
+  });
+});
+$('#addFieldBtn').addEventListener('click', addFieldFromManager);
+$('#addFieldInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); addFieldFromManager(); }
+});
+function addFieldFromManager(){
+  var name = $('#addFieldInput').value.trim();
+  if(!name) return;
+  createField(name);
+  $('#addFieldInput').value = '';
+  renderFieldList(); render();
+}
+
+/* ---------------------------------------------------------------
+   내보내기 / 가져오기
+---------------------------------------------------------------- */
+$('#exportBtn').addEventListener('click', function(){
+  var data = { version:1, exportedAt:new Date().toISOString(), fields:state.fields, books:state.books };
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'bookshelf-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  notify('JSON 파일로 내보냈습니다.');
+});
+
+$('#importBtn').addEventListener('click', function(){ $('#fileInput').click(); });
+$('#fileInput').addEventListener('change', function(e){
+  var file = e.target.files && e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    var data;
+    try { data = JSON.parse(reader.result); }
+    catch(err){ notify('JSON 파일을 읽지 못했습니다. 파일 형식을 확인해 주세요.'); return; }
+    if(!data || !Array.isArray(data.books)){ notify('책 목록이 없는 파일입니다.'); return; }
+    pending.importData = data;
+    $('#importSummary').textContent = '파일에 책 ' + data.books.length + '권, 분야 '
+      + ((data.fields && data.fields.length) || 0) + '개가 들어 있습니다.';
+    openModal('#importBackdrop');
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+$('#importConfirm').addEventListener('click', function(){
+  var data = pending.importData;
+  if(!data) return;
+  var mode = document.querySelector('input[name="importMode"]:checked').value;
+  var incoming = data.books.map(normalizeBook);
+  if(mode === 'replace'){
+    state.fields = (data.fields && data.fields.length) ? data.fields.slice() : state.fields;
+    state.books = incoming;
+    notify('파일의 내용으로 덮어썼습니다. 책 ' + incoming.length + '권.');
+  } else {
+    (data.fields || []).forEach(function(f){
+      if(!fieldById(f.id) && !state.fields.some(function(x){ return x.name === f.name; })){
+        state.fields.push({ id:f.id || uid('fd'), name:f.name, color:f.color || nextColor() });
+      }
+    });
+    var added = 0;
+    incoming.forEach(function(b){
+      var exists = state.books.some(function(x){
+        return x.id === b.id || (x.title.replace(/\s/g,'') === b.title.replace(/\s/g,'') && x.publisher === b.publisher);
+      });
+      if(!exists){ state.books.push(b); added++; }
+    });
+    notify(added ? added + '권을 더했습니다.' : '새로 더할 책이 없었습니다.');
+  }
+  pending.importData = null;
+  save(); closeModal(); render();
+});
+
+/* ---------------------------------------------------------------
+   시작
+---------------------------------------------------------------- */
+$('#sort').value = ui.sort;
+render();
+if(!storageOK){
+  notify('이 브라우저에서는 저장이 되지 않아 새로 고치면 내용이 사라집니다.');
+}
+})();
+</script>
+</body>
+</html>
